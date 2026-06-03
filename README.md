@@ -23,6 +23,8 @@ The goal of this project is to solve real-world business problems using SQL quer
 
 ## Database Schema
 
+![Database Schema](schemas%20for%20table.png)
+
 The database contains information about:
 
 - Customers
