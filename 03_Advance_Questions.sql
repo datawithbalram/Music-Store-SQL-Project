@@ -53,15 +53,15 @@ order by 5 desc;
 --METHOD 1 — ROW_NUMBER() Method
 -- =========================================================
 -- STEP 1:
--- Har country + genre ka purchases count nikaal rahe hain
--- Saath me ranking bhi de rahe hain
+-- Calculate the purchase count for each country and genre
+-- Also assign a rank based on the purchase count
 -- =========================================================
 
 WITH popular_genre AS (
 
     SELECT
 
-        -- Har group me kitni purchase rows hain
+        -- Count the number of purchase records in each group
         COUNT(*) AS purchases,
 
 
@@ -77,10 +77,8 @@ WITH popular_genre AS (
         genre.genre_id,
 
 
-        -- Har country ke andar ranking
-        --
-        -- Highest purchases ko row number 1 milega
-
+        -- Rank genres within each country
+-- The genre with the highest purchase count gets rank 1
         ROW_NUMBER() OVER(
 
             PARTITION BY customer.country
@@ -90,7 +88,7 @@ WITH popular_genre AS (
         ) AS rowno
 
 
-    -- Actual purchases yaha stored hote hain
+    -- This is where the actual purchase data is stored
     FROM invoice_line
 
 
@@ -134,7 +132,7 @@ WITH popular_genre AS (
 
 -- =========================================================
 -- STEP 2:
--- Sirf row number 1 waale genres rakho
+-- Retain only the top-ranked genres (row number 1)
 -- =========================================================
 
 SELECT *
@@ -142,21 +140,23 @@ SELECT *
 FROM popular_genre
 
 
--- Har country ka top ranked genre
+-- Top-selling genre in each country
 WHERE rowno = 1;
 
---METHOD 2 — Tie Handling Method (Better Method)
+
+
+--Now METHOD 2 — Tie Handling Method (Better Method)
 -- =========================================================
 -- STEP 1:
--- Har country + genre ka purchases count nikaal rahe hain
+-- Calculate the purchase count for each country and genre
 -- =========================================================
 
 WITH sales_per_country AS (
 
     SELECT
 
-        -- Har group ki rows count
-        -- Har row = purchase
+        -- Count rows in each group
+        -- Each row = one purchase
         COUNT(*) AS purchases_per_genre,
 
 
@@ -215,7 +215,7 @@ WITH sales_per_country AS (
 
 -- =========================================================
 -- STEP 2:
--- Har country ka maximum purchases nikaal rahe hain
+-- Calculate the highest purchase count for each country
 -- =========================================================
 
 max_genre_per_country AS (
@@ -233,7 +233,7 @@ max_genre_per_country AS (
     FROM sales_per_country
 
 
-    -- Har country ka alag maximum
+-- Separate maximum value for each country
     GROUP BY country
 )
 
@@ -241,8 +241,8 @@ max_genre_per_country AS (
 
 -- =========================================================
 -- STEP 3:
--- Sirf wahi genres rakho
--- jinka purchases = maximum purchases
+-- Keep only those genres
+-- where purchases = maximum purchases
 -- =========================================================
 
 SELECT
@@ -253,7 +253,7 @@ FROM sales_per_country
 
 
 
--- Country matching ke liye join
+-- Join for matching country values
 JOIN max_genre_per_country
 
     ON sales_per_country.country =
@@ -261,7 +261,7 @@ JOIN max_genre_per_country
 
 
 
--- Sirf maximum purchases waale genres
+-- Keep only the genres that have the highest purchase count
 WHERE sales_per_country.purchases_per_genre =
 
       max_genre_per_country.max_genre_number;
@@ -286,8 +286,8 @@ WHERE sales_per_country.purchases_per_genre =
 
 -- =========================================================
 -- STEP 1:
--- Har customer ne total kitna spend kiya
--- wo nikaal rahe hain country-wise
+-- Calculate the total spend of each customer
+-- grouped by country
 -- =========================================================
 
 WITH customer_with_country AS (
@@ -312,8 +312,8 @@ WITH customer_with_country AS (
 
         -- Total spending
         --
-        -- Ek customer ki multiple invoices ho sakti hain
-        -- Isliye SUM use kar rahe hain
+-- A single customer may have multiple invoices
+-- So we use SUM to aggregate the total spend
 
         SUM(invoice.total) AS total_spending
 
@@ -322,9 +322,8 @@ WITH customer_with_country AS (
     FROM customer
 
 
-    -- Invoice join
-    --
-    -- Taaki spending mile
+    -- Joining invoice table
+-- To calculate customer spending
     JOIN invoice
 
         ON invoice.customer_id =
@@ -350,7 +349,7 @@ WITH customer_with_country AS (
 
 -- =========================================================
 -- STEP 2:
--- Har country ka maximum spending nikaal rahe hain
+-- Calculate the highest total spending per country
 -- =========================================================
 
 country_max_spending AS (
@@ -367,7 +366,7 @@ country_max_spending AS (
     FROM customer_with_country
 
 
-    -- Har country ka alag maximum
+   -- Separate maximum spending for each country
     GROUP BY country
 )
 
@@ -375,8 +374,8 @@ country_max_spending AS (
 
 -- =========================================================
 -- STEP 3:
--- Sirf wahi customers rakho
--- jinka spending = country ka maximum spending
+-- Keep only those customers
+-- whose spending equals the maximum spending of their country
 -- =========================================================
 
 SELECT
@@ -390,7 +389,7 @@ FROM customer_with_country
 
 
 
--- Country matching ke liye join
+-- Join to match countries
 JOIN country_max_spending
 
     ON customer_with_country.country =
@@ -398,7 +397,7 @@ JOIN country_max_spending
 
 
 
--- Sirf maximum spending waale customers
+-- Only customers with maximum spending
 WHERE customer_with_country.total_spending =
 
       country_max_spending.max_spending;
